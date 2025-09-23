@@ -1,4 +1,4 @@
-# Formalizing Verification in Lean – FU Berlin Block Course March 2026
+# Formalizing Verification in Lean – FUB Block Course 2026
 
 ## Announcements
 
