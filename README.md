@@ -8,7 +8,7 @@
 
 This is the second time this course is being held. The structure will largely follow last year’s with some additions and modifications, but is nevertheless subject to (spontaneous) change. Constructive feedback is welcomed throughout the course and afterwards.
 
-### About
+### Teaching team
 
 [Christoph Spiegel](https://christophspiegel.berlin) will teach this course. He is a researcher at ZIB in Prof. Pokutta’s IOL group, working on combinatorics, optimization, machine learning, and proof formalization. [Silas Rathke](https://www.mi.fu-berlin.de/en/math/groups/geokomb/People/PhD-Students/Silas_Rathke.html) will serve as the teaching assistant. He is a Ph.D. student at FUB in Prof. Szabo’s group, focusing on extremal combinatorics and related formalization projects.
 
@@ -22,22 +22,19 @@ The course is open to everyone, including guest auditors (Gasthörer), not just 
 
 For the `aktive Teilnahme`, Master-level participants will be required to solve additional and more advanced problems in the exercise sessions compared to Bachelor-level students. Both Bachelor and Master-level students will sit the same **final exam on the second Friday**. Master-level students will additionally receive a **small formalization project** to complete in the one or two weeks following the course. The exact scope and evaluation format has not yet been determined but may include an in-person presentation.
 
-### Background
+### Prerequisites
 
-* Completion of Analysis I and Linear Algebra I should provide a sufficient mathematical background, but participants should have a strong understanding of these subjects, as formal proof verification is very "unforgiving". No prior programming experience is required, but a certain "technical affinity and interest" is needed. Besides formal proof verification, you will be in contact with many other tools such as `git` and `github`, [Patrick Massot’s](https://www.imo.universite-paris-saclay.fr/~patrick.massot/en/) `leanblueprint`, CI/CD in the form of `github Actions`, as well as various ML tools.
-* Participants **need to bring a laptop** to follow along and work on exercises.
-* The course will be **conducted in English**, but Bachelor students taking the course as part of their ABV requirements may express themselves in German if they prefer.
+Completion of Analysis I and Linear Algebra I should provide a sufficient mathematical background, though participants should have a strong command of these subjects, as formal proof verification is very "unforgiving". No prior programming experience is required, but a certain technical affinity and interest is needed. Besides formal proof verification, you will be in contact with many other tools such as `git` and `github`, [Patrick Massot’s](https://www.imo.universite-paris-saclay.fr/~patrick.massot/en/) `leanblueprint`, CI/CD in the form of `github Actions`, as well as various ML tools.
+
+Participants need to **bring a laptop** to follow along and work on exercises. The course will be **conducted in English**, but Bachelor students taking the course as part of their ABV requirements may express themselves in German if they prefer.
 
 ### Setup
 
-We will walk through the full setup together on the first day. We will cover the following:
+We will walk through the full setup together on the first day, covering [Visual Studio Code](https://code.visualstudio.com), a **[GitHub account](https://github.com/signup)**, and **git**. The process for setting up git varies by platform:
 
-* Setting up [Visual Studio Code](https://code.visualstudio.com).
-* Creating a **[GitHub account](https://github.com/signup)**.
-* Setting up **git**. The process varies by platform:
-  * **macOS** — `xcode-select --install` installs Apple’s developer tools, which include git. [Homebrew](https://brew.sh) is not required but recommended as a general package manager.
-  * **Linux** — Install git via your package manager, e.g. `sudo apt install git` on Debian/Ubuntu or `sudo pacman -S git` on Arch.
-  * **Windows** — We recommend installing [WSL2](https://learn.microsoft.com/en-us/windows/wsl/install) (Windows Subsystem for Linux) with Ubuntu, which is the officially recommended environment for Lean on Windows. Git is then installed within WSL (`sudo apt install git`). Keep your course files inside the WSL filesystem (e.g. `~/projects/`) rather than your Windows Documents folder, and open VS Code from within WSL using `code .`.
+* **macOS** — `xcode-select --install` installs Apple’s developer tools, which include git. [Homebrew](https://brew.sh) is not required but recommended as a general package manager.
+* **Linux** — Install git via your package manager, e.g. `sudo apt install git` on Debian/Ubuntu or `sudo pacman -S git` on Arch.
+* **Windows** — We recommend installing [WSL2](https://learn.microsoft.com/en-us/windows/wsl/install) (Windows Subsystem for Linux) with Ubuntu, which is the officially recommended environment for Lean on Windows. Git is then installed within WSL (`sudo apt install git`). Keep your course files inside the WSL filesystem (e.g. `~/projects/`) rather than your Windows Documents folder, and open VS Code from within WSL using `code .`.
 
 ## Course Outline
 
