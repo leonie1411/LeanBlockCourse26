@@ -5,12 +5,15 @@
 """Generate OUTLINE.md from repo contents (slides, sections, exercise blocks)."""
 
 import re
+from dataclasses import dataclass, field
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 CODE_DIR = ROOT / "LeanBlockCourse26"
 SLIDES_DIR = ROOT / "lecture-slides"
 OUT = ROOT / "OUTLINE.md"
+
+GITHUB_BLOB = "https://github.com/FordUniver/LeanBlockCourse26/blob/main"
 
 # Static part metadata: (directory_name, description)
 # Only parts listed here appear in the outline.
@@ -22,36 +25,105 @@ PARTS = [
     ("P05_NaturalNumbers", "Natural numbers in Lean: why inductive types are so powerful."),
 ]
 
-EXERCISE_RE = re.compile(r"^## .*[Ee]xercise", re.MULTILINE)
 TITLE_RE = re.compile(r"^# (.+)$", re.MULTILINE)
+BLOCK_RE = re.compile(r"^## .*[Ee]xercise.*$", re.MULTILINE)
+EXERCISE_RE = re.compile(r"^-- Exercise (.+)$", re.MULTILINE)
+
+
+@dataclass
+class Exercise:
+    label: str
+    line: int
+    description: str = ""
+
+
+@dataclass
+class ExerciseBlock:
+    heading: str
+    line: int
+    exercises: list[Exercise] = field(default_factory=list)
+
+
+@dataclass
+class Section:
+    name: str
+    topic: str
+    rel_path: str
+    blocks: list[ExerciseBlock] = field(default_factory=list)
+
+
+def line_of(text: str, pos: int) -> int:
+    """Convert byte offset to 1-based line number."""
+    return text[:pos].count("\n") + 1
+
+
+def github_url(rel_path: str, line: int | None = None) -> str:
+    url = f"{GITHUB_BLOB}/{rel_path}"
+    if line is not None:
+        url += f"#L{line}"
+    return url
 
 
 def find_slides(part: str) -> Path | None:
-    """Return path to slide PDF if it exists."""
     pdf = SLIDES_DIR / f"{part}.pdf"
     return pdf if pdf.exists() else None
 
 
-def find_sections(part: str) -> list[tuple[str, str, int]]:
-    """Return [(section_name, topic, exercise_count)] for a part."""
+def find_sections(part: str) -> list[Section]:
     part_dir = CODE_DIR / part
     if not part_dir.is_dir():
         return []
 
     sections = []
     for f in sorted(part_dir.glob("S*.lean")):
-        name = f.stem
         text = f.read_text()
+        lines = text.splitlines()
+        rel_path = f.relative_to(ROOT)
 
         # Extract topic from first `# Title` inside a doc comment
         topic = ""
         if m := TITLE_RE.search(text):
             topic = m.group(1).strip().rstrip("=").strip()
 
-        # Count exercise blocks
-        ex_count = len(EXERCISE_RE.findall(text))
+        # Find exercise blocks and their positions
+        block_matches = list(BLOCK_RE.finditer(text))
+        blocks: list[ExerciseBlock] = []
 
-        sections.append((name, topic, ex_count))
+        for i, bm in enumerate(block_matches):
+            block_line = line_of(text, bm.start())
+            heading = bm.group(0).removeprefix("## ")
+
+            # Region: from block heading to next block heading or EOF
+            start = bm.end()
+            end = block_matches[i + 1].start() if i + 1 < len(block_matches) else len(text)
+            region = text[start:end]
+            region_offset = start
+
+            # Find individual exercises in this region
+            exercises: list[Exercise] = []
+            for em in EXERCISE_RE.finditer(region):
+                ex_line = line_of(text, region_offset + em.start())
+                label = em.group(1).strip()
+
+                # Extract description from following `-- ` comment lines
+                desc_parts = []
+                for subsequent in lines[ex_line:]:  # lines after the exercise label
+                    if subsequent.startswith("-- ") and not subsequent.startswith("-- Exercise "):
+                        desc_parts.append(subsequent[3:].strip())
+                    else:
+                        break
+                description = " ".join(desc_parts)
+
+                exercises.append(Exercise(label=label, line=ex_line, description=description))
+
+            blocks.append(ExerciseBlock(heading=heading, line=block_line, exercises=exercises))
+
+        sections.append(Section(
+            name=f.stem,
+            topic=topic,
+            rel_path=str(rel_path),
+            blocks=blocks,
+        ))
 
     return sections
 
@@ -87,20 +159,28 @@ def generate() -> str:
         if not sections:
             continue
 
-        has_exercises = any(ex > 0 for _, _, ex in sections)
         lines.append("")
+        lines.append("| Section | Topic |")
+        lines.append("|---------|-------|")
+        for sec in sections:
+            link = f"[{sec.name}]({github_url(sec.rel_path)})"
+            lines.append(f"| {link} | {sec.topic} |")
 
-        if has_exercises:
-            lines.append("| Section | Topic | Exercises |")
-            lines.append("|---------|-------|-----------|")
-            for name, topic, ex in sections:
-                ex_str = f"{ex} block{'s' if ex != 1 else ''}" if ex > 0 else "—"
-                lines.append(f"| {name} | {topic} | {ex_str} |")
-        else:
-            lines.append("| Section | Topic |")
-            lines.append("|---------|-------|")
-            for name, topic, _ in sections:
-                lines.append(f"| {name} | {topic} |")
+        # Exercise details
+        has_exercises = any(sec.blocks for sec in sections)
+        if not has_exercises:
+            continue
+
+        lines.append("")
+        lines.append("**Exercises:**")
+        for sec in sections:
+            for block in sec.blocks:
+                block_link = f"[{block.heading}]({github_url(sec.rel_path, block.line)})"
+                lines.append(f"- **{sec.name}** — {block_link}")
+                for ex in block.exercises:
+                    ex_link = f"[{ex.label}]({github_url(sec.rel_path, ex.line)})"
+                    desc = f" — {ex.description}" if ex.description else ""
+                    lines.append(f"  - {ex_link}{desc}")
 
     # Examination (static)
     lines.append("")
