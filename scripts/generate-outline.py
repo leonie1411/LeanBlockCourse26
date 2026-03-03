@@ -5,9 +5,11 @@
 """Generate OUTLINE.md and inject announcements into HOME.md."""
 
 import re
+import subprocess
 from dataclasses import dataclass, field
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 ROOT = Path(__file__).resolve().parent.parent
 CODE_DIR = ROOT / "LeanBlockCourse26"
@@ -219,16 +221,97 @@ BEGIN_MARKER = "<!-- begin announcements -->"
 END_MARKER = "<!-- end announcements -->"
 
 RECENT_DAYS = 3
+BERLIN = ZoneInfo("Europe/Berlin")
 
 
-def parse_announcement(line: str) -> tuple[date | None, str]:
-    """Extract date and body text from an announcement bullet line."""
-    if m := ANNOUNCE_DATE_RE.match(line):
-        d = date.fromisoformat(m.group(1))
-        # Strip the `- **YYYY-MM-DD:** ` prefix to get the body
-        body = line[m.end():].strip()
-        return d, body
-    return None, line.lstrip("- ").strip()
+def blame_timestamps(filepath: Path) -> dict[int, datetime]:
+    """Map 1-based line numbers to author timestamps via git blame."""
+    try:
+        result = subprocess.run(
+            ["git", "blame", "--porcelain", str(filepath)],
+            capture_output=True, text=True, cwd=ROOT, check=True,
+        )
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return {}
+
+    timestamps: dict[int, datetime] = {}
+    sha_cache: dict[str, datetime] = {}
+    current_sha: str | None = None
+    current_line: int | None = None
+    author_time: int | None = None
+
+    for raw in result.stdout.splitlines():
+        # New blame entry: <sha> <orig-line> <final-line> [<count>]
+        if len(raw) >= 40 and raw[0] in "0123456789abcdef":
+            parts = raw.split()
+            if len(parts) >= 3:
+                current_sha = parts[0]
+                current_line = int(parts[2])
+                author_time = None
+                # If we've seen this sha before, reuse its timestamp
+                if current_sha in sha_cache and current_line is not None:
+                    timestamps[current_line] = sha_cache[current_sha]
+        elif raw.startswith("author-time "):
+            author_time = int(raw.split()[1])
+        elif raw.startswith("author-tz "):
+            if author_time is not None and current_line is not None:
+                dt = datetime.fromtimestamp(author_time, tz=timezone.utc)
+                ts = dt.astimezone(BERLIN)
+                timestamps[current_line] = ts
+                if current_sha is not None:
+                    sha_cache[current_sha] = ts
+
+    return timestamps
+
+
+@dataclass
+class Announcement:
+    d: date
+    body: str
+    timestamp: datetime | None = None
+
+
+def parse_announcements() -> list[Announcement]:
+    """Parse announcements from README.md with git-blame timestamps."""
+    readme_text = README.read_text()
+    m = ANNOUNCE_RE.search(readme_text)
+    if not m:
+        return []
+
+    # Find the line offset of the announcements section in the file
+    section_start = readme_text[:m.start()].count("\n") + 1  # 1-based
+    body_start = section_start + 1  # skip "## Announcements" line
+
+    lines = [l for l in m.group(1).strip().splitlines() if l.strip()]
+    if not lines:
+        return []
+
+    # Get timestamps from git blame
+    ts_map = blame_timestamps(README)
+
+    # Map each announcement line to its file line number
+    all_readme_lines = readme_text.splitlines()
+    announcements: list[Announcement] = []
+    search_from = body_start - 1  # 0-based index
+
+    for line in lines:
+        line_num = None
+        for i in range(search_from, len(all_readme_lines)):
+            if all_readme_lines[i].strip() == line.strip():
+                line_num = i + 1  # 1-based
+                search_from = i + 1
+                break
+
+        ann_date = date.today()
+        body = line.lstrip("- ").strip()
+        if dm := ANNOUNCE_DATE_RE.match(line):
+            ann_date = date.fromisoformat(dm.group(1))
+            body = line[dm.end():].strip()
+
+        ts = ts_map.get(line_num) if line_num else None
+        announcements.append(Announcement(d=ann_date, body=body, timestamp=ts))
+
+    return announcements
 
 
 def inline_md_to_html(text: str) -> str:
@@ -238,19 +321,18 @@ def inline_md_to_html(text: str) -> str:
     return text
 
 
-def format_date_label(d: date) -> str:
-    """Format date as 'Mon, Mar 3' inside a just-the-docs label pill."""
-    # e.g. "Mon, Mar 3"
-    text = d.strftime("%a, %b %-d")
+def format_label(ann: Announcement) -> str:
+    """Format announcement as a date+time label pill."""
+    if ann.timestamp:
+        text = ann.timestamp.strftime("%a, %b %-d · %-H:%M")
+    else:
+        text = ann.d.strftime("%a, %b %-d")
     return f'<span class="label label-yellow">{text}</span>'
 
 
-def render_announcement(d: date | None, body: str) -> str:
+def render_announcement(ann: Announcement) -> str:
     """Render a single announcement as an HTML paragraph with date label."""
-    html_body = inline_md_to_html(body)
-    if d is not None:
-        return f"<p>{format_date_label(d)} {html_body}</p>"
-    return f"<p>{html_body}</p>"
+    return f"<p>{format_label(ann)} {inline_md_to_html(ann.body)}</p>"
 
 
 def inject_announcements() -> None:
@@ -258,32 +340,22 @@ def inject_announcements() -> None:
 
     Recent announcements (within RECENT_DAYS) are shown in a highlighted
     callout at the top. Older ones are collapsed in a <details> block.
+    Timestamps are inferred from git blame.
     """
-    readme = README.read_text()
-    m = ANNOUNCE_RE.search(readme)
-    if not m:
-        return
-
-    bullets = [l for l in m.group(1).strip().splitlines() if l.strip()]
-    if not bullets:
+    announcements = parse_announcements()
+    if not announcements:
         return
 
     cutoff = date.today() - timedelta(days=RECENT_DAYS)
-    recent: list[tuple[date | None, str]] = []
-    older: list[tuple[date | None, str]] = []
-    for line in bullets:
-        d, body = parse_announcement(line)
-        if d is not None and d < cutoff:
-            older.append((d, body))
-        else:
-            recent.append((d, body))
+    recent = [a for a in announcements if a.d >= cutoff]
+    older = [a for a in announcements if a.d < cutoff]
 
     parts: list[str] = []
 
     if recent:
         parts.append('<blockquote class="highlight">')
-        for d, body in recent:
-            parts.append(render_announcement(d, body))
+        for ann in recent:
+            parts.append(render_announcement(ann))
         parts.append("</blockquote>")
         parts.append("")
 
@@ -292,7 +364,7 @@ def inject_announcements() -> None:
         summary = "Older announcements" if recent else "Announcements"
         parts.append(f"<summary>{summary}</summary>")
         parts.append('<blockquote class="highlight">')
-        for d, body in older:
+        for ann in older:
             parts.append(render_announcement(d, body))
         parts.append("</blockquote>")
         parts.append("</details>")
