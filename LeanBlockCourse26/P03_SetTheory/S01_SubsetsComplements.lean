@@ -109,7 +109,7 @@ convert between sets and predicates."
 -/
 
 -- `x ∈ S` is notation for `Membership x S` and `{x | P x}` for `setOf P`
-lemma mem_setOf (x₀ : α) (P : α → Prop) : x₀ ∈ { x | P x} ↔ P x₀ := by rfl
+theorem mem_setOf (x₀ : α) (P : α → Prop) : x₀ ∈ { x | P x} ↔ P x₀ := by rfl
 
 -- example (x₀ : α) (P : α → Prop) : Membership x₀ (setOf P) ↔ P x₀ := rfl
 
@@ -121,7 +121,7 @@ example (x : α) (S : Set α) (h : x ∈ S) : Nonempty S := by
 example (x : α) (S : Set α) (h : x ∈ S) : Nonempty S := ⟨x, h⟩
 
 -- `{x}` constructs the set containing `x`
-lemma mem_singleton_iff {x y : α} : x ∈ ({y} : Set α) ↔ x = y :=  by rfl
+theorem mem_singleton_iff {x y : α} : x ∈ ({y} : Set α) ↔ x = y :=  by rfl
 
 -- Both sides are definitionally equal (`x ∈ ({y} : Set α)` unfolds to `x = y`),
 -- so the `rfl` tactic closes this via `Iff.rfl`. Term mode `rfl` only proves
@@ -134,7 +134,7 @@ example {x y : α} : x ∈ ({y} : Set α) ↔ x = y := by
 example {x y : α} : x ∈ Set.singleton y ↔ x = y := by rfl
 
 -- `{x, y}` constructs the set containing two elements `x` and `y`
-lemma mem_pair (t x y : α) : t ∈ ({x, y} : Set α) ↔ t = x ∨ t = y := by rfl
+theorem mem_pair (t x y : α) : t ∈ ({x, y} : Set α) ↔ t = x ∨ t = y := by rfl
 
 /-
 `S ⊆ T` is syntax for `HasSubset` and is (essentially) defined as
@@ -143,13 +143,13 @@ lemma mem_pair (t x y : α) : t ∈ ({x, y} : Set α) ↔ t = x ∨ t = y := by 
 -/
 
 -- This is `Set.subset_def` in mathlib ...
-lemma subset_def {S T : Set α} : (S ⊆ T) = ∀ x ∈ S, x ∈ T := rfl
+theorem subset_def {S T : Set α} : (S ⊆ T) = ∀ x ∈ S, x ∈ T := rfl
 
 -- ... but `∀ x ∈ S` makes `x : α` and `x ∈ S` explicit, which we could avoid throgh
-lemma subset_def_impl {S T : Set α} : (S ⊆ T) = ({x : α} → x ∈ S → x ∈ T) := rfl
+theorem subset_def_impl {S T : Set α} : (S ⊆ T) = ({x : α} → x ∈ S → x ∈ T) := rfl
 
 -- This is `Set.ssubset_def` in mathlib
-lemma ssubset_def {S T : Set α} : (S ⊂ T) = (S ⊆ T ∧ ¬T ⊆ S) := rfl
+theorem ssubset_def {S T : Set α} : (S ⊂ T) = (S ⊆ T ∧ ¬T ⊆ S) := rfl
 
 /-
 ## Set Reflexivity
@@ -157,7 +157,7 @@ lemma ssubset_def {S T : Set α} : (S ⊂ T) = (S ⊆ T ∧ ¬T ⊆ S) := rfl
 Every set is a subset of itself — `Set.Subset.rfl` in mathlib.
 -/
 
-lemma Subset.rfl (S : Set α) : S ⊆ S := by rfl
+theorem Subset.rfl (S : Set α) : S ⊆ S := by rfl
 
 example (S : Set α) : S ⊆ S := by
   rw [subset_def] -- You can rewrite definitions, but here this is optional
@@ -170,7 +170,7 @@ example (S : Set α) : S ⊆ S := by
 If `S ⊆ T` and `T ⊆ R` then `S ⊆ R` — `Set.Subset.trans` in mathlib.
 -/
 
-lemma Subset.trans {S T R : Set α} (h₁ : S ⊆ T) (h₂ : T ⊆ R) : S ⊆ R := by
+theorem Subset.trans {S T R : Set α} (h₁ : S ⊆ T) (h₂ : T ⊆ R) : S ⊆ R := by
   rw [subset_def] at * -- again optional
   intro x (xs : x ∈ S)
   have xt : x ∈ T := h₁ x xs
@@ -195,7 +195,7 @@ The empty set `∅` is the set of elements of type `α` for which `False` holds
 theorem empty_def : ∅ = {x : α | False} := rfl
 
 -- The empty set is a subset of every set — `Set.empty_subset` in mathlib
-lemma empty_subset (S : Set α) : ∅ ⊆ S := by
+theorem empty_subset (S : Set α) : ∅ ⊆ S := by
   rw [empty_def, subset_def]
   intro x h
   exfalso
@@ -299,3 +299,135 @@ example : ∃ T, T ⊆ S := by
 example : ∃ T, T ⊆ S := ⟨S, by rfl⟩
 
 end P03S01B01
+
+
+/-
+## Set equality
+
+`S = T` if and only if `x ∈ S ↔ x ∈ T` for all `x`.
+-/
+
+-- This is `Set.ext_iff` in mathlib ...
+theorem ext_iff {S T : Set α} : S = T ↔ ∀ x, x ∈ S ↔ x ∈ T := Set.ext_iff
+
+-- ... and the `ext` tactic also knows about it 
+example {S T : Set α} : S = T ↔ ∀ x, x ∈ S ↔ x ∈ T := by
+  constructor
+  · intro st x
+    constructor
+    · intro xs
+      rw [← st]
+      exact xs
+    · intro xt
+      rw [st]
+      exact xt
+  · intro h
+    ext x
+    exact h x
+
+#golf example {S T : Set α} : S = T ↔ ∀ x, x ∈ S ↔ x ∈ T := by
+  constructor
+  · exact fun st x => ⟨fun xs => st ▸ xs, fun xt => st.symm ▸ xt⟩
+  · intro h
+    ext x
+    exact h x
+
+/-
+## Side remark: extensionability axioms
+
+Extensionability tell us when two types of a specific form are equal. We just
+saw set extensionability, which uses `funext` and `propext`:
+
+```
+theorem ext {a b : Set α} (h : ∀ (x : α), x ∈ a ↔ x ∈ b) : a = b :=
+  funext (fun x ↦ propext (h x))
+```
+
+`funext` is just the exentionsionability of functions we have previously 
+already seen and used with the `ext` tactic
+
+```
+theorem funext {α : Sort u} {β : α → Sort v} {f g : (x : α) → β x}
+    (h : ∀ x, f x = g x) : f = g := by
+  let eqv (f g : (x : α) → β x) := ∀ x, f x = g x
+  let extfunApp (f : Quot eqv) (x : α) : β x :=
+    Quot.liftOn f
+      (fun (f : ∀ (x : α), β x) => f x)
+      (fun _ _ h => h x)
+  change extfunApp (Quot.mk eqv f) = extfunApp (Quot.mk eqv g)
+  exact congrArg extfunApp (Quot.sound h)
+```
+
+`propext` is extensionability of propositions, stating that `P ↔ Q` implies `P = Q`.
+This is the only reason why we can `rw` with equivalences.
+
+```
+axiom propext {a b : Prop} : (a ↔ b) → a = b
+```
+
+`funext` also depends on `Quot.sound`, another axiom:
+
+```
+axiom sound : ∀ {α : Sort u} {r : α → α → Prop} {a b : α}, r a b → Quot.mk r a = Quot.mk r b
+```
+-/
+
+/-
+## Complements
+
+For a set `S`, the complement `Sᶜ` is defined as the set of all elements of type
+`α` that are not contained in `S`. Note that lean always defines what "universe"
+a set lives in through its type `α`, that is a complement is always well defined.
+-/
+
+example (S : Set α) : Sᶜ = {x | x ∉ S} := rfl
+
+theorem mem_compl_iff (S : Set α) (x : α) : x ∈ Sᶜ ↔ x ∉ S := by rfl
+
+/-
+## Exercise Block B02
+
+Do *not*  use or look up the statements or other theorems in mathlib, only use
+named theorems that we defined in this file. Once you proved a named theorem,
+look up its actual proof in mathlib.
+-/
+
+namespace P02S01B02
+
+variable {S T : Set α} 
+
+-- Exercise 2.1
+theorem Subset.antisymm (h₁ : S ⊆ T) (h₂ : T ⊆ S) : S = T := by
+  sorry
+
+-- Exercise 2.2
+theorem Subset.antisymm_iff : (S = T) ↔ (S ⊆ T ∧ T ⊆ S) := by
+  sorry
+
+-- Exercise 2.3 (Master)
+example : (S = T) ↔ (S ⊆ T ∧ T ⊆ S) := by
+  sorry
+
+-- Exercise 2.4 (Master)
+example {x : α} (h₁ : x ∈ S) (h₂ : x ∉ T) : ¬S ⊆ T := by
+  sorry
+
+-- Exercise 2.5
+lemma compl_subset_compl_of_subset (h₁ : S ⊆ T) : Tᶜ ⊆ Sᶜ := by
+  sorry
+
+-- Exercise 2.6 (Master)
+example (S : Set α) : Sᶜᶜ = S := by
+  sorry
+
+-- Exercise 2.7
+lemma compl_subset_compl (S T : Set α) : Tᶜ ⊆ Sᶜ ↔ S ⊆ T  := by
+  sorry
+
+-- Exercise 2.8 (Master)
+example (h : S ⊆ T) {x : α} (hx : x ∈ Tᶜ) : x ∈ Sᶜ := by
+  sorry
+
+-- Exercise 2.9 (Master)
+example {R : Set α} (h₁ : R ⊆ S) (h₂ : S ⊆ T) : Tᶜ ⊆ Rᶜ := by
+  sorry
