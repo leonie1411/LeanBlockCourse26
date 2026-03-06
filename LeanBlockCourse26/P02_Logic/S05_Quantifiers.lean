@@ -205,7 +205,7 @@ example (R : α → α → Prop) (h : ∀ x, ∃ y, R x y) :
   use f
 
 -- Exercise 1.5 (Master)
--- Note that this introduces the cartesian product of two types `α × β`
+-- Note that this introduces the (cartesian) product of two types `α × β`
 example {β} (r : β → Prop)
     (h₁ : ∃ x, p x) (h₂ : ∃ y, r y) : ∃ z : α × β, p z.1 ∧ r z.2 := by
   obtain ⟨x, px⟩ := h₁
