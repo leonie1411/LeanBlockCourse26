@@ -57,18 +57,33 @@ theorem four_eq_succ_three : 4 = succ 3 := rfl
 theorem five_eq_succ_four : 5 = succ 4 := rfl
 theorem zero_eq_zero : 0 = zero := rfl
 
-
 /-
 ## Exercise Block B01
 -/
 
 -- Exercise 1.1
 example : 2 = succ (succ 0) := by
-  sorry
+  rw [two_eq_succ_one, one_eq_succ_zero]
 
--- Exercise 12
-theorem eq_succ_of_ne_zero {n : MyNat}
-    (h : n ≠ 0) : ∃ m : MyNat, n = succ m := by
-  sorry
+example : 2 = succ (succ 0) := by
+  rw [← one_eq_succ_zero, ← two_eq_succ_one]
+
+example : 2 = succ (succ 0) := rfl
+
+-- Exercise 1.2
+theorem eq_succ_of_ne_zero {n : MyNat} (h : n ≠ 0) :
+    ∃ m : MyNat, n = succ m := by
+  -- Hint: try `induction n` or just `cases n`
+  cases' n with k
+  · contradiction
+  · use k
+
+-- Exercise 1.3 (Master)
+-- Turn Exercise 1.2 into a verified algorithm
+def eq_succ_of_ne_zero_algorithm {n : MyNat} (h : n ≠ 0) :
+    { m : MyNat // n = succ m } := by
+  cases n with
+  | zero => contradiction
+  | succ k => use k 
 
 end MyNat
