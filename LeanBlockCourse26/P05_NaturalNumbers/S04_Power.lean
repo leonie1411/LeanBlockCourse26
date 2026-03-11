@@ -68,7 +68,7 @@ theorem pow_two (n : MyNat) : n ^ (2 : MyNat) = n * n := by
 theorem pow_add (n m k : MyNat) : n ^ (m + k) = n ^ m * n ^ k := by
   induction k with
   | zero => rw [← zero_eq_zero, add_zero, pow_zero, mul_one]
-  | succ m ih => rw [add_succ, pow_succ, pow_succ, ih, mul_assoc]
+  | succ k' ih => rw [add_succ, pow_succ, pow_succ, ih, mul_assoc]
 
 -- Exercise 1.7
 -- By induction on `k`. The base case follows from `pow_zero` and `mul_one`.
@@ -105,16 +105,16 @@ theorem add_sq (n m : MyNat) :
   rw [← add_assoc, ← add_assoc]
 
 /-
-## Bonus (Master): State (and prove) Fermat's Last Theorem
+## Bonus (Master): Prove Fermat's Last Theorem
 
 Fermat's Last Theorem states that if `x, y, z > 0` and
 `m ≥ 3` then `x^m + y^m ≠ z^m`. Since we have not yet
 introduced inequalities, you will need to restate this
-using several inequalities.
+using disequalities (`≠`).
 
 The shortest solution known to humans would translate into
 many millions of lines of Lean code. Kevin Buzzard is working
-on translating the proof by Wiles and Taylor into Lean, although
+on translating the proof by Taylor and Wiles into Lean, although
 this task will take many years.
 -/
 
@@ -131,7 +131,7 @@ theorem fermats_last_theorem (x y z m : MyNat)
 Many of the proofs above were tedious — long `rw` chains rearranging terms
 via associativity and commutativity, with no deep mathematical insight.
 The following rearrangement of 8 variables illustrates the problem. `#golf`
-your solution and try to make the *term mode* as compact as possible.
+your solution and try to make the *tactic proof* as compact as possible.
 -/
 
 example (a b c d e f g h : MyNat) :
@@ -349,7 +349,7 @@ Note that a theorem can also be directly tagged when stating!
 -/
 
 -- Exercise 2.1 
--- Prove once using ony `rw` and `exact` and then once using `simp` 
+-- Prove once using only `rw` and `exact` and then once using `simp`
 example (a b c : MyNat) : (a + b) + (b + c) = (b + b) + (a + c) := by
   rw [add_assoc, ← add_assoc b, add_comm, add_comm a, ← add_assoc]
 

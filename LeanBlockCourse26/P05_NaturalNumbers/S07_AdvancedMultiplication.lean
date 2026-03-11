@@ -50,6 +50,7 @@ theorem mul_eq_zero {n m : MyNat} (h : n * m = 0) : n = 0 ∨ m = 0 := by
 ## A challenging induction: `induction` while `generalizing`
 -/
 
+-- Exercise 2.1 (Master)
 theorem mul_left_cancel {n m k : MyNat}
     (hn : n ≠ 0) (h : n * m = n * k) : m = k := by
   sorry

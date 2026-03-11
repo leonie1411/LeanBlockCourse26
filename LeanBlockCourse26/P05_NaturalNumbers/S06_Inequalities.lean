@@ -17,7 +17,7 @@ namespace MyNat
 /-
 ## Inequality
 
-We define `m ≤ n` as `∃ k, m = n + k`.
+We define `n ≤ m` as `∃ k, m = n + k`.
 -/
 
 def le (n m : MyNat) := ∃ k, m = n + k
@@ -63,7 +63,7 @@ example (n : MyNat) : 0 ≤ n := by
     simp [ih, succ_eq_add_one]
 
 /-
-We also define `m < n` as `m ≤ n ∧ m ≠ n` OR as `m + 1 ≤ n`
+We define `m < n` as `m + 1 ≤ n`. We will later show this is equivalent to `m ≤ n ∧ m ≠ n`.
 -/
 
 def lt (n m : MyNat) := (succ n) ≤ m
@@ -113,3 +113,5 @@ theorem lt_iff_le_and_ne (m n : MyNat) : m < n ↔ m ≤ n ∧ m ≠ n := by
 -- Exercise 1.10 (Master)
 theorem le_total (n m : MyNat) : n ≤ m ∨ m ≤ n := by
   sorry
+
+end MyNat
