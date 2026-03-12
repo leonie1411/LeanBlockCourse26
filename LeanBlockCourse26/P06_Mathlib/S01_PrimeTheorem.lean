@@ -39,7 +39,7 @@ To do this, you should:
 
 (III) Use `exact?` or `simp?` whenever you think you have a nuclear expression that *should*
       be in mathlib to try and find it. Often it is advisable to extract the statement into
-      separate `example` for this. You can also manually search the files, guess the 
+      separate `example` for this. You can also manually search the files, guess the
       expected theorem name based on the [mathlib naming convention](https://leanprover-community.github.io/contribute/naming.html),
       use [leansearch.net](https://leansearch.net) or [Loogle](https://loogle.lean-lang.org),
       talk to people on [Is there code for X? on zulip](https://leanprover.zulipchat.com/#narrow/channel/217875-Is-there-code-for-X.3F/topic/Complexity.20theory/with/578655619)
@@ -82,12 +82,54 @@ theorem infinitude_of_primes_tfae : [
   tfae_have 3 → 4 := by sorry -- Alexandra
 
   tfae_have 5 → 4 := by sorry -- Sammy
-  
+
   tfae_have 6 → 3 := by sorry -- Anna
 
   tfae_have 6 → 1 := by sorry -- Alexander
 
-  tfae_have 4 → 1 := by sorry -- Cara
+  tfae_have 4 → 1 := by -- Cara
+   /-
+   We are proving that :
+      Given:
+         (4) For any finite set *of prime numbers* we can find a prime number outside of it, i.e.
+         `(∀ (S : Finset ℕ) (_ : ∀ s ∈ S, Nat.Prime s), (∃ p ∉ S, p.Prime))`.
+      Then:
+         (1) The set of primes is infinite, i.e. `{ p : ℕ | p.Prime }.Infinite`.
+   -/
+
+   -- First, we clear the unused variables to make the InfoView more readable.
+   clear tfae_5_to_6 tfae_2_to_3 tfae_1_to_2 tfae_1_to_6 tfae_3_to_2
+      tfae_3_to_4 tfae_5_to_4 tfae_6_to_3 tfae_6_to_1
+
+   -- Introduce our assumption (4)
+   intro h
+
+   --- Assume by way of contradiction that the set of primes is finite.
+   by_contra P_finite
+   push_neg at P_finite
+
+   -- We also define P, the set of primes, to use later in the proof.
+   let P := {p | Nat.Prime p}
+
+   -- Now, we show that all numbers in our set are prime, using the theorem `Set.mem_toFinset`
+   -- See: (https://leanprover-community.github.io/mathlib4_docs/find/?pattern=Set.mem_toFinset#doc)
+   -- This is necessary, since our hypothesis is only for sets of prime numbers.
+   obtain (n_in_P_n_prime : (∀ n ∈ P_finite.toFinset, Nat.Prime n)) :=
+      fun _ => (@Set.Finite.mem_toFinset ℕ P _ P_finite).mp
+
+   -- We apply our hypothesis, so we get that there exists a
+   -- prime not in our finite set of primes
+   have _ := h P_finite.toFinset n_in_P_n_prime
+
+   -- Finally, we show that the opposite statement is also true, and we get a contradiction.
+   -- See: https://leanprover-community.github.io/mathlib4_docs/find/?pattern=Set.notMem_setOf_iff#doc
+   -- For the description of `notMem_setOf_iff`
+   obtain (_ : ¬(∃ p ∉ P_finite.toFinset, Nat.Prime p)) := by
+      push_neg
+      intro p p_not_in_P_finset
+      have p_not_in_S := (@Set.Finite.mem_toFinset ℕ P p P_finite).mpr.mt p_not_in_P_finset
+      exact Set.notMem_setOf_iff.mp p_not_in_S
+   contradiction
 
   tfae_have 1 → 5 := by sorry -- Tonio
 
@@ -96,24 +138,3 @@ theorem infinitude_of_primes_tfae : [
   tfae_have 3 → 5 := by sorry -- Daniel
 
   tfae_finish
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
